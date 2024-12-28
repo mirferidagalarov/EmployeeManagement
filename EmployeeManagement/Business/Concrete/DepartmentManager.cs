@@ -15,11 +15,11 @@ namespace Business.Concrete
 {
     public class DepartmentManager : IDepartmentService
     {
-        private readonly IDepartmentDAL _departmentDAL;
+        private readonly IUnitOfWork _unitOfWork;   
         private readonly IMapper _mapper;
-        public DepartmentManager(IDepartmentDAL departmentDAL,IMapper mapper)
+        public DepartmentManager(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _departmentDAL = departmentDAL;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;   
         }
         public IResult Add(DepartmentAddDTO departmentAddDTO)
@@ -34,30 +34,30 @@ namespace Business.Concrete
             if (failedBusinessLogic is not null)
                 return failedBusinessLogic;
 
-            _departmentDAL.Add(department);
-            _departmentDAL.SaveChanges();
+            _unitOfWork.DepartmentDAL.Add(department);
+            _unitOfWork.DepartmentDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
 
         public IResult Delete(int id)
         {
-            var deleteEntity = _departmentDAL.GetById(x => x.ID == id);
+            var deleteEntity = _unitOfWork.DepartmentDAL.GetById(x => x.ID == id);
 
             deleteEntity.Deleted = id;
-            _departmentDAL.Update(deleteEntity);
-            _departmentDAL.SaveChanges();
+            _unitOfWork.DepartmentDAL.Update(deleteEntity);
+            _unitOfWork.DepartmentDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_DELETED_SUCCESSFULLY);
         }
 
 
         public IDataResult<List<DepartmentListDTO>> GetAllDepartmentCompany()
         {
-            return new SuccessDataResult<List<DepartmentListDTO>>(_departmentDAL.GetAllDepartmentCompany());
+            return new SuccessDataResult<List<DepartmentListDTO>>(_unitOfWork.DepartmentDAL.GetAllDepartmentCompany());
         }
 
         public IDataResult<DepartmentListDTO> GetDepartmentCompany(int id)
         {
-            return new SuccessDataResult<DepartmentListDTO>(_departmentDAL.GetDepartmentCompany(id));
+            return new SuccessDataResult<DepartmentListDTO>(_unitOfWork.DepartmentDAL.GetDepartmentCompany(id));
         }
 
         public IResult Update(DepartmentUpdateDTO departmentUpdateDTO)
@@ -72,14 +72,14 @@ namespace Business.Concrete
             if (failedBusinessLogic is not null)
                 return failedBusinessLogic;
 
-            _departmentDAL.Update(department);
-            _departmentDAL.SaveChanges();
+            _unitOfWork.DepartmentDAL.Update(department);
+            _unitOfWork.DepartmentDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
 
         private IResult CheckDuplicateRow(Department model)
         {
-            var allData = _departmentDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
+            var allData = _unitOfWork.DepartmentDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
             var existingRow = allData.FirstOrDefault(x => x.Name == model.Name);
             if (existingRow != null)
                 return new ErrorResult(DefaultConstantValues.DUPLICATE_RECORD_FOUND);

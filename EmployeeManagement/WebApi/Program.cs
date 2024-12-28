@@ -2,6 +2,8 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Business.DependcyResolvers;
 using Business.Mappers;
+using DataAccess.Abstract;
+using DataAccess.Concrete.EntityFramework;
 using DataAccess.DatabaseContext;
 using Entities.Concrete.Membership;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,6 +32,9 @@ builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("localDb"));
 });
+
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {

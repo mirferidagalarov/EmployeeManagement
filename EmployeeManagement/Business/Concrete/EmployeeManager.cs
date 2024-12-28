@@ -14,11 +14,11 @@ namespace Business.Concrete
 {
     public class EmployeeManager : IEmployeeService
     {
-        private readonly IEmployeeDAL _employeeDAL;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public EmployeeManager(IEmployeeDAL employeeDAL,IMapper mapper)
+        public EmployeeManager(IUnitOfWork unitOfWork,IMapper mapper)
         {
-            _employeeDAL = employeeDAL; 
+            _unitOfWork = unitOfWork; 
             _mapper = mapper;   
         }
 
@@ -30,34 +30,34 @@ namespace Business.Concrete
             if (!validationResult)
                 return new ErrorResult(errors.ValidationErrorMessagesWithNewLine());
 
-            _employeeDAL.Add(employee);
-            _employeeDAL.SaveChanges();
+            _unitOfWork.EmployeeDAL.Add(employee);
+            _unitOfWork.EmployeeDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
 
         public IResult Delete(int id)
         {
-            var deleteEntity = _employeeDAL.GetById(x => x.ID == id);
+            var deleteEntity = _unitOfWork.EmployeeDAL.GetById(x => x.ID == id);
 
             deleteEntity.Deleted = id;
-            _employeeDAL.Update(deleteEntity);
-            _employeeDAL.SaveChanges();
+            _unitOfWork.EmployeeDAL.Update(deleteEntity);
+            _unitOfWork.EmployeeDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_DELETED_SUCCESSFULLY);
         }
 
         public IDataResult<List<EmployeeListDTO>> GetAllEmployee()
         {
-            return new SuccessDataResult<List<EmployeeListDTO>>(_employeeDAL.GetAllEmployee());
+            return new SuccessDataResult<List<EmployeeListDTO>>(_unitOfWork.EmployeeDAL.GetAllEmployee());
         }
 
         public IDataResult<EmployeeListDTO> GetEmployee(int id)
         {
-            return new SuccessDataResult<EmployeeListDTO>(_employeeDAL.GetEmployee(id));
+            return new SuccessDataResult<EmployeeListDTO>(_unitOfWork.EmployeeDAL.GetEmployee(id));
         }
 
         public IDataResult<int> GetEmployeeCount(string text)
         {
-            return new SuccessDataResult<int>(_employeeDAL.EmployeeSearchCount(text));
+            return new SuccessDataResult<int>(_unitOfWork.EmployeeDAL.EmployeeSearchCount(text));
         }
 
         public IDataResult<List<EmployeeListDTO>> GetEmployeeSearch(string text, int page, int pageSize)
@@ -67,7 +67,7 @@ namespace Business.Concrete
                 page = 0;
             }
 
-            return new SuccessDataResult<List<EmployeeListDTO>>(_employeeDAL.EmployeeSearch(text).ToList());
+            return new SuccessDataResult<List<EmployeeListDTO>>(_unitOfWork.EmployeeDAL.EmployeeSearch(text).ToList());
         }
 
         public IResult Update(EmployeeUpdateDTO employeeUpdateDTO)
@@ -78,8 +78,8 @@ namespace Business.Concrete
             if (!validationResult)
                 return new ErrorResult(errors.ValidationErrorMessagesWithNewLine());
 
-            _employeeDAL.Update(employee);
-            _employeeDAL.SaveChanges();
+            _unitOfWork.EmployeeDAL.Update(employee);
+            _unitOfWork.EmployeeDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
     }

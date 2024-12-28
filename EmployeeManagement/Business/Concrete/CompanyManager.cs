@@ -15,12 +15,12 @@ namespace Business.Concrete
 {
     public class CompanyManager : ICompanyService
     {
-        private readonly ICompanyDAL _companyDAL;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public CompanyManager(ICompanyDAL companyDAL,IMapper mapper)
+        public CompanyManager(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _companyDAL = companyDAL;   
-            _mapper = mapper;   
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
         public IResult Add(CompanyAddDTO companyAddDTO)
         {
@@ -34,30 +34,29 @@ namespace Business.Concrete
             if (failedBusinessLogic is not null)
                 return failedBusinessLogic;
 
-
-            _companyDAL.Add(company);
-            _companyDAL.SaveChanges();
+            _unitOfWork.CompanyDAL.Add(company);
+            _unitOfWork.SaveAsync();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
 
         public IResult Delete(int id)
         {
-            var deleteEntity = _companyDAL.GetById(x => x.ID == id);
+            var deleteEntity = _unitOfWork.CompanyDAL.GetById(x => x.ID == id);
 
             deleteEntity.Deleted = id;
-            _companyDAL.Update(deleteEntity);
-            _companyDAL.SaveChanges();
+            _unitOfWork.CompanyDAL.Update(deleteEntity);
+            _unitOfWork.CompanyDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_DELETED_SUCCESSFULLY);
         }
 
         public IDataResult<Company> Get(int id)
         {
-            return new SuccessDataResult<Company>(_companyDAL.GetById(x => x.ID == id && x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE));
+            return new SuccessDataResult<Company>(_unitOfWork.CompanyDAL.GetById(x => x.ID == id && x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE));
         }
 
         public IDataResult<List<CompanyListDTO>> GetAll()
         {
-            List<Company> companies = _companyDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
+            List<Company> companies = _unitOfWork.CompanyDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
             return new SuccessDataResult<List<CompanyListDTO>>(_mapper.Map<List<CompanyListDTO>>(companies));
         }
 
@@ -74,15 +73,15 @@ namespace Business.Concrete
                 return failedBusinessLogic;
 
 
-            _companyDAL.Update(company);
-            _companyDAL.SaveChanges();
+            _unitOfWork.CompanyDAL.Update(company);
+            _unitOfWork.CompanyDAL.SaveChanges();
             return new SuccessResult(DefaultConstantValues.DATA_ADDED_SUCCESSFULLY);
         }
 
 
         private IResult CheckDuplicateRow(Company model)
         {
-            var allData = _companyDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
+            var allData = _unitOfWork.CompanyDAL.GetAll(x => x.Deleted == DefaultConstantValues.DEFAULT_DELETED_COLUMN_VALUE);
             var existingRow = allData.FirstOrDefault(x => x.Name == model.Name);
             if (existingRow != null)
                 return new ErrorResult(DefaultConstantValues.DUPLICATE_RECORD_FOUND);
