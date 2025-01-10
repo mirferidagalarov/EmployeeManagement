@@ -2,6 +2,7 @@
 using Business.Messages;
 using Entities.Concrete.DTOs.CompanyDTOs;
 using Entities.Concrete.DTOs.DepartmentDTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DepartmentController : ControllerBase
     {
         private readonly IDepartmentService _departmentService;

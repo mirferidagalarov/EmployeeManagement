@@ -10,6 +10,7 @@ using Core.Validation;
 using DataAccess.Abstract;
 using Entities.Concrete.DTOs.CompanyDTOs;
 using Entities.Concrete.TableModels;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Business.Concrete
 {

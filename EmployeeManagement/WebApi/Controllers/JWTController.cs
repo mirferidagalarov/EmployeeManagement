@@ -15,12 +15,12 @@ namespace WebApi.Controllers
             _config = config;
         }
 
-        [HttpGet]
-        public IActionResult Get()
-        {
-            Token token = TokenHandler.CreateToken(_config);
-            return Ok(token);
-        }
+        //[HttpGet]
+        //public IActionResult Get()
+        //{
+        //    Token token = TokenHandler.CreateToken(_config);
+        //    return Ok(token);
+        //}
 
     }
 }

@@ -1,12 +1,15 @@
 ﻿using Business.Abstract;
 using Business.Messages;
 using Entities.Concrete.DTOs.CompanyDTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
+    
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize]
     public class CompanyController : ControllerBase
     {
         private readonly ICompanyService _companyService;
@@ -15,7 +18,9 @@ namespace WebApi.Controllers
             _companyService=companyService;
         }
 
+        
         [HttpGet("GetAllCompany")]
+        [Authorize]
         public IActionResult GetAll()
         {
             var result = _companyService.GetAll();

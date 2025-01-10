@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using Business.Abstract;
 using Business.Concrete;
+using Business.Security;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 
@@ -24,6 +25,16 @@ namespace Business.DependcyResolvers
             builder.RegisterType<EmployeeEfDAL>().As<IEmployeeDAL>();
             builder.RegisterType<EmployeeManager>().As<IEmployeeService>();
             #endregion
+
+            #region User[...]
+            builder.RegisterType<UsersManager>().As<IUserService>();
+            #endregion
+
+            #region Token[...]
+            builder.RegisterType<TokenHandler>().As<ITokenHelper>();
+            #endregion
+
+
         }
     }
 }

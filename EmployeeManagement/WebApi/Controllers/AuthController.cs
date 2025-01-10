@@ -1,4 +1,6 @@
-﻿using Entities.Concrete.DTOs.MembershipDTOs;
+﻿using Business.Abstract;
+using Business.Messages;
+using Entities.Concrete.DTOs.MembershipDTOs;
 using Entities.Concrete.Membership;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,141 +15,138 @@ namespace WebApi.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        public AuthController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
+        private readonly IUserService _userService;  
+        public AuthController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,IUserService userService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _userService = userService;
         }
-        //[HttpPost]
-        //public async Task<IActionResult> Register(RegisterDTO registerDTO, CancellationToken cancellationToken)
-        //{
-        //    AppUser user = new()
-        //    {
-        //        Email = registerDTO.Email,
-        //        UserName = registerDTO.UserName,
-        //        FirstName = registerDTO.FirstName,
-        //        LastName = registerDTO.LastName,
-        //    };
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterDTO registerDTO, CancellationToken cancellationToken)
+        {
+            var result =await _userService.Register(registerDTO);
+            if (result.Success)
+            {
+                return Ok(AuthMessage.RegisterSuccessful);
+            }
 
-        //    IdentityResult result = await _userManager.CreateAsync(user, registerDTO.Password);
+            return BadRequest(result);
+        }
 
-        //    if (!result.Succeeded)
-        //        return BadRequest(result.Errors.Select(s => s.Description));
+        [HttpPost]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO, CancellationToken cancellationToken)
+        {
+            AppUser? appUser = await _userManager.FindByIdAsync(changePasswordDTO.ID.ToString());
+            if (appUser is null)
+                return BadRequest(new { Message = "User not found" });
 
+            IdentityResult result = await _userManager.ChangePasswordAsync(appUser, changePasswordDTO.CurrentPassword, changePasswordDTO.NewPassword);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors.Select(s => s.Description));
 
-        //    return NoContent();
-        //}
+            return NoContent();
+        }
 
-        //[HttpPost]
-        //public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO, CancellationToken cancellationToken)
-        //{
-        //    AppUser? appUser = await _userManager.FindByIdAsync(changePasswordDTO.ID.ToString());
-        //    if (appUser is null)
-        //        return BadRequest(new { Message = "User not found" });
+        [HttpGet]
+        public async Task<IActionResult> ForgotPassword(string email, CancellationToken cancellationToken)
+        {
+            AppUser? appUser = await _userManager.FindByEmailAsync(email);
 
-        //    IdentityResult result = await _userManager.ChangePasswordAsync(appUser, changePasswordDTO.CurrentPassword, changePasswordDTO.NewPassword);
-        //    if (!result.Succeeded)
-        //        return BadRequest(result.Errors.Select(s => s.Description));
+            if (appUser is null)
+            {
+                return BadRequest(new { Message = "User not found" });
+            }
 
-        //    return NoContent();
-        //}
+            string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
 
-        //[HttpGet]
-        //public async Task<IActionResult> ForgotPassword(string email, CancellationToken cancellationToken)
-        //{
-        //    AppUser? appUser = await _userManager.FindByEmailAsync(email);
+            return Ok(new { Token = token });
+        }
 
-        //    if (appUser is null)
-        //    {
-        //        return BadRequest(new { Message = "User not found" });
-        //    }
+        [HttpPost]
+        public async Task<IActionResult> ChangeEmailPassword(ChangePasswordTokenDTO changePasswordTokenDTO, CancellationToken cancellationToken)
+        {
+            AppUser? appUser = await _userManager.FindByEmailAsync(changePasswordTokenDTO.Email);
 
-        //    string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
+            if (appUser is null)
+            {
+                return BadRequest(new { Message = "User not found" });
+            }
 
-        //    return Ok(new { Token = token });
-        //}
-
-        //[HttpPost]
-        //public async Task<IActionResult> ChangePassword(ChangePasswordTokenDTO changePasswordTokenDTO, CancellationToken cancellationToken)
-        //{
-        //    AppUser? appUser = await _userManager.FindByEmailAsync(changePasswordTokenDTO.Email);
-
-        //    if (appUser is null)
-        //    {
-        //        return BadRequest(new { Message = "User not found" });
-        //    }
-
-        //    IdentityResult result = await _userManager.ResetPasswordAsync(appUser, changePasswordTokenDTO.Token, changePasswordTokenDTO.NewPassword);
+            IdentityResult result = await _userManager.ResetPasswordAsync(appUser, changePasswordTokenDTO.Token, changePasswordTokenDTO.NewPassword);
 
 
 
-        //    if (!result.Succeeded)
-        //    {
-        //        return BadRequest(result.Errors.Select(x => x.Description));
-        //    }
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(x => x.Description));
+            }
 
-        //    return NoContent();
+            return NoContent();
 
-        //}
+        }
 
-        //[HttpPost]
-        //public async Task<IActionResult> Login(LoginDTO loginDTO, CancellationToken cancellationToken)
-        //{
-        //    AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginDTO loginDTO, CancellationToken cancellationToken)
+        {
+            //AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
 
-        //    if (appUser is null)
-        //    {
-        //        return BadRequest(new { Message = "User Not Found" });
-        //    }
+            //if (appUser is null)
+            //{
+            //    return BadRequest(new { Message = "User Not Found" });
+            //}
 
-        //    bool result = await _userManager.CheckPasswordAsync(appUser, loginDTO.Password);
+            //bool result = await _userManager.CheckPasswordAsync(appUser, loginDTO.Password);
 
-        //    if (!result)
-        //        return BadRequest(new { Message = "Password incorrect" });
+            //if (!result)
+            //    return BadRequest(new { Message = "Password incorrect" });
+            var result = await _userService.VerifyUser(loginDTO, cancellationToken);
+            if (result.Success)
+                return Ok(result);
 
-        //    return Ok(new { Token = "Token" });
 
-        //}
+            return BadRequest();
+        }
 
-        //[HttpPost]
+        [HttpPost]
 
-        //public async Task<IActionResult> LoginWithSignInManager(LoginDTO loginDTO, CancellationToken cancellationToken)
-        //{
-        //    AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
-        //    if (appUser is null)
-        //    {
-        //        return BadRequest(new { Message = "User Not Found" });
-        //    }
+        public async Task<IActionResult> LoginWithSignInManager(LoginDTO loginDTO, CancellationToken cancellationToken)
+        {
+            AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
+            if (appUser is null)
+            {
+                return BadRequest(new { Message = "User Not Found" });
+            }
 
-        //    SignInResult signInResult = await _signInManager.CheckPasswordSignInAsync(appUser, loginDTO.Password, true);
+            SignInResult signInResult = await _signInManager.CheckPasswordSignInAsync(appUser, loginDTO.Password, true);
 
-        //    if (signInResult.IsLockedOut)
-        //    {
-        //        TimeSpan? timeSpan = appUser.LockoutEnd - DateTime.Now;
+            if (signInResult.IsLockedOut)
+            {
+                TimeSpan? timeSpan = appUser.LockoutEnd - DateTime.Now;
 
-        //        if (timeSpan is not null)
-        //        {
-        //            return StatusCode(500, $"You have been blocked for {timeSpan.Value.TotalSeconds} seconds due to entering your password incorrectly 3 times");
-        //        }
-        //        else
-        //        {
-        //            return StatusCode(500, $"You have been blocked for 30 seconds due to entering your password incorrectly 3 times");
-        //        }
-        //    }
+                if (timeSpan is not null)
+                {
+                    return StatusCode(500, $"You have been blocked for {timeSpan.Value.TotalSeconds} seconds due to entering your password incorrectly 3 times");
+                }
+                else
+                {
+                    return StatusCode(500, $"You have been blocked for 30 seconds due to entering your password incorrectly 3 times");
+                }
+            }
 
-        //    if (signInResult.IsNotAllowed)
-        //    {
-        //        return StatusCode(500, "Your email address is not verified.");
-        //    }
+            if (signInResult.IsNotAllowed)
+            {
+                return StatusCode(500, "Your email address is not verified.");
+            }
 
-        //    if (!signInResult.Succeeded)
-        //    {
-        //        return StatusCode(500, "Password Incorrect");
-        //    }
+            if (!signInResult.Succeeded)
+            {
+                return StatusCode(500, "Password Incorrect");
+            }
 
-        //    return Ok(new {Token="Token"});
+            return Ok(new { Token = "Token" });
 
-        //}
+        }
     }
 }
 
