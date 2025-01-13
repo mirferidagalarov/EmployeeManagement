@@ -2,6 +2,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Business.DependcyResolvers;
 using Business.Mappers;
+using Core.Security;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.DatabaseContext;
@@ -23,18 +24,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+#region AutoFac
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
                        .ConfigureContainer<ContainerBuilder>(builder =>
                        {
                            builder.RegisterModule(new AutofacBusinessModule());
                        });
+#endregion
 
+#region  ConnectionDatabase
 builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("localDb"));
 });
+#endregion
 
+#region SwaggerConfiguration
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme,
@@ -61,9 +66,13 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+#endregion
 
+#region Injection
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+#endregion
 
+#region  CorsConfiguration
 builder.Services.AddCors(option =>
 {
     option.AddPolicy("cors", policy =>
@@ -71,57 +80,56 @@ builder.Services.AddCors(option =>
         policy.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
     });
 });
+#endregion
 
+#region IdentityConfiguration
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;  
+    options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
     options.Password.RequiredLength = 1;
     //
-    options.User.RequireUniqueEmail=false;
+    options.User.RequireUniqueEmail = false;
     //
     options.SignIn.RequireConfirmedEmail = true;
     options.Lockout.MaxFailedAccessAttempts = 3;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromSeconds(30);
 
 }).AddEntityFrameworkStores<DataContext>().AddDefaultTokenProviders();
+#endregion
 
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-//{
-//    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-//    {
-//        ValidateAudience = true,
-//        ValidateIssuer = true,
-//        ValidateLifetime = true,
-//        ValidateIssuerSigningKey = true,
-//        ValidIssuer = builder.Configuration["Token:Issuer"],
-//        ValidAudience = builder.Configuration["Token:Audience"],
-//        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Token:SecurityKey"])),
-//        ClockSkew=TimeSpan.Zero,
-//    };
-//});
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+#region TokenConfiguration
+var tokenConfig = builder.Configuration.GetSection("TokenOptions").Get<Business.Security.JWT.TokenOptions>();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Token:Issuer"],
-            ValidAudience = builder.Configuration["Token:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Token:SecurityKey"]))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidIssuer = tokenConfig.Issuer,
+        ValidAudience = tokenConfig.Audience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = SecurityKeyHelper.CreateSecurityKey(tokenConfig.SecurityKey),
+    };
+});
+#endregion
 
-
+#region AutoMapper
 builder.Services.AddAutoMapper(typeof(Automapper));
+#endregion
 
+#region  UrlLowercase
 builder.Services.AddRouting(x => x.LowercaseUrls = true);
+#endregion
+
 
 var app = builder.Build();
 

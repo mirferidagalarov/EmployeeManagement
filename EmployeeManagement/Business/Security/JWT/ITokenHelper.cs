@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Business.Security
+namespace Business.Security.JWT
 {
     public interface ITokenHelper
     {
-        Token CreateToken(AppUser user);
+        AccessToken CreateToken(AppUser user);
+        string GenerateRefreshToken();
     }
 }

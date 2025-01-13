@@ -9,5 +9,6 @@ namespace Business.Messages
     public static class AuthMessage
     {
         public readonly static string RegisterSuccessful = "RegisterSuccessful";
+        public readonly static string PasswordChangeSuccessful = "PasswordChangeSuccessful";
     }
 }

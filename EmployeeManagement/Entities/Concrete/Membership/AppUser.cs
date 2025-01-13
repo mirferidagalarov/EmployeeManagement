@@ -13,6 +13,8 @@ namespace Entities.Concrete.Membership
         public string FirstName { get; set; }= string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string FullName => $"{FirstName} {LastName}";
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenEndDate { get; set; }
 
 
     }

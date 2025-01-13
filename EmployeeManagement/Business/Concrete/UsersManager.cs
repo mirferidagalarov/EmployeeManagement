@@ -1,5 +1,6 @@
 ﻿using Business.Abstract;
 using Business.Security;
+using Business.Security.JWT;
 using Core.Results.Abstract;
 using Core.Results.Concrete;
 using Entities.Concrete.DTOs.MembershipDTOs;
@@ -52,27 +53,27 @@ namespace Business.Concrete
             return new SuccessResult();
         }
 
-        public IResult DeleteUser(AppUser user)
-        {
-            throw new NotImplementedException();
-        }
+       
 
         public Task<IResult> RefreshTokenLogin(string refreshToken)
         {
-            throw new NotImplementedException();
+            var user = await _systemUserDal.FindRefreshToken(refreshToken);
+            if (user != null && user?.RefreshTokenEndDate > DateTime.Now)
+            {
+                AccessToken token = _tokenHelper.CreateToken(user);
+
+                await UpdateRefreshToken(token.RefreshToken, user, token.ExpirationDate);
+
+                return new SuccessDataResult<AccessToken>(token);
+            }
+            else
+            {
+                return new ErrorResult("İstifadəçi tapılmadı");
+            }
         }
 
-        public IResult UpdatePassword(AppUser dto)
-        {
-            throw new NotImplementedException();
-        }
 
-        public IResult UpdateUser(AppUser user)
-        {
-            throw new NotImplementedException();
-        }
 
-        [AllowAnonymous]
         public async Task<IResult> VerifyUser(LoginDTO loginDTO, CancellationToken cancellationToken)
         {
             AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
@@ -86,7 +87,50 @@ namespace Business.Concrete
 
             //Token token= TokenHandler.CreateToken(appUser);
            var token= _tokenHelper.CreateToken(appUser);
-            return new SuccessDataResult<Token>(token);
+            return new SuccessDataResult<AccessToken>(token);
+        }
+
+        public async Task<IResult> ChangePassword(ChangePasswordDTO dto)
+        {
+            AppUser? appUser = await _userManager.FindByIdAsync(dto.ID.ToString());
+
+            if (appUser == null)
+                return new ErrorResult("User Not Found");
+
+            IdentityResult identityResult = await _userManager.ChangePasswordAsync(appUser, dto.CurrentPassword, dto.NewPassword);
+
+            if (!identityResult.Succeeded)
+                return new ErrorResult("Change Password Not Successful");
+
+            return new SuccessResult("Change Password Successful");
+        }
+
+        public async Task<IResult> ChangeEmailPassword(ChangePasswordTokenDTO dto)
+        {
+            AppUser? appUser = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (appUser == null)
+                return new ErrorResult("User Not Found");
+
+            IdentityResult result = await _userManager.ResetPasswordAsync(appUser, dto.Token, dto.NewPassword);
+
+            if (!result.Succeeded)
+                return new ErrorResult("Not Successful");
+
+            return new SuccessResult("Change Password Successful");
+              
+        }
+
+        public async Task<IResult> EmailPasswordToken(string email)
+        {
+            AppUser? appUser = await _userManager.FindByEmailAsync(email);
+
+            if (appUser == null)
+                return new ErrorResult("User Not Found");
+
+            string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
+
+            return new SuccessResult(token);
         }
     }
 }

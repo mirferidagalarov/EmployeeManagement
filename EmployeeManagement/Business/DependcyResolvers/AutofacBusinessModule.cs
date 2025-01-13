@@ -2,6 +2,7 @@
 using Business.Abstract;
 using Business.Concrete;
 using Business.Security;
+using Business.Security.JWT;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 
@@ -31,10 +32,8 @@ namespace Business.DependcyResolvers
             #endregion
 
             #region Token[...]
-            builder.RegisterType<TokenHandler>().As<ITokenHelper>();
+            builder.RegisterType<JWTHelper>().As<ITokenHelper>();
             #endregion
-
-
         }
     }
 }

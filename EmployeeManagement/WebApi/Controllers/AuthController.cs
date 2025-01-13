@@ -37,79 +37,47 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO, CancellationToken cancellationToken)
         {
-            AppUser? appUser = await _userManager.FindByIdAsync(changePasswordDTO.ID.ToString());
-            if (appUser is null)
-                return BadRequest(new { Message = "User not found" });
+          var userPassword= await _userService.ChangePassword(changePasswordDTO);
 
-            IdentityResult result = await _userManager.ChangePasswordAsync(appUser, changePasswordDTO.CurrentPassword, changePasswordDTO.NewPassword);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors.Select(s => s.Description));
-
-            return NoContent();
+            if (userPassword.Success)
+                return Ok(AuthMessage.PasswordChangeSuccessful);
+                 
+            return BadRequest();
         }
 
         [HttpGet]
         public async Task<IActionResult> ForgotPassword(string email, CancellationToken cancellationToken)
         {
-            AppUser? appUser = await _userManager.FindByEmailAsync(email);
+         var token=  await _userService.EmailPasswordToken(email);
 
-            if (appUser is null)
-            {
-                return BadRequest(new { Message = "User not found" });
-            }
+            if (token.Success)
+                return Ok(token);
 
-            string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
-
-            return Ok(new { Token = token });
+            return BadRequest();    
         }
 
         [HttpPost]
         public async Task<IActionResult> ChangeEmailPassword(ChangePasswordTokenDTO changePasswordTokenDTO, CancellationToken cancellationToken)
         {
-            AppUser? appUser = await _userManager.FindByEmailAsync(changePasswordTokenDTO.Email);
+           var userPassword= await _userService.ChangeEmailPassword(changePasswordTokenDTO);
 
-            if (appUser is null)
-            {
-                return BadRequest(new { Message = "User not found" });
-            }
-
-            IdentityResult result = await _userManager.ResetPasswordAsync(appUser, changePasswordTokenDTO.Token, changePasswordTokenDTO.NewPassword);
-
-
-
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors.Select(x => x.Description));
-            }
-
-            return NoContent();
-
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginDTO loginDTO, CancellationToken cancellationToken)
-        {
-            //AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
-
-            //if (appUser is null)
-            //{
-            //    return BadRequest(new { Message = "User Not Found" });
-            //}
-
-            //bool result = await _userManager.CheckPasswordAsync(appUser, loginDTO.Password);
-
-            //if (!result)
-            //    return BadRequest(new { Message = "Password incorrect" });
-            var result = await _userService.VerifyUser(loginDTO, cancellationToken);
-            if (result.Success)
-                return Ok(result);
-
+            if (userPassword.Success)
+                return Ok(AuthMessage.PasswordChangeSuccessful);
 
             return BadRequest();
         }
 
         [HttpPost]
+        public async Task<IActionResult> Login(LoginDTO loginDTO, CancellationToken cancellationToken)
+        {
+            var result = await _userService.VerifyUser(loginDTO, cancellationToken);
+            if (result.Success)
+                return Ok(result);
 
+            return BadRequest();
+        }
+
+        [HttpPost]
         public async Task<IActionResult> LoginWithSignInManager(LoginDTO loginDTO, CancellationToken cancellationToken)
         {
             AppUser? appUser = await _userManager.Users.FirstOrDefaultAsync(p => p.Email == loginDTO.UserNameOrEmail || p.UserName == loginDTO.UserNameOrEmail, cancellationToken);
