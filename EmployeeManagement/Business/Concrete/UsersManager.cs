@@ -53,11 +53,10 @@ namespace Business.Concrete
             return new SuccessResult();
         }
 
-       
-
-        public Task<IResult> RefreshTokenLogin(string refreshToken)
+        public async Task<IResult> RefreshTokenLogin(string refreshToken)
         {
-            var user = await _systemUserDal.FindRefreshToken(refreshToken);
+            var user = await _userManager.Users.FirstOrDefaultAsync(x => x.RefreshToken == refreshToken);
+
             if (user != null && user?.RefreshTokenEndDate > DateTime.Now)
             {
                 AccessToken token = _tokenHelper.CreateToken(user);
@@ -72,7 +71,20 @@ namespace Business.Concrete
             }
         }
 
+        public async Task<IResult> UpdateRefreshToken(string refreshToken, AppUser systemUser, DateTime accesTokenDate)
+        {
+            if (systemUser is not null)
+            {
+                systemUser.RefreshToken = refreshToken;
+                systemUser.RefreshTokenEndDate = accesTokenDate.AddMonths(1);
 
+                await _userManager.UpdateAsync(systemUser);
+
+                return new SuccessResult("RefreshToken uğurla yaradıldı!");
+            }
+            return new ErrorResult("İstifadəçi tapılmadı");
+
+        }
 
         public async Task<IResult> VerifyUser(LoginDTO loginDTO, CancellationToken cancellationToken)
         {
@@ -85,8 +97,9 @@ namespace Business.Concrete
             if (!result)
                 return new ErrorResult("Password Incorrect");
 
-            //Token token= TokenHandler.CreateToken(appUser);
-           var token= _tokenHelper.CreateToken(appUser);
+            var token = _tokenHelper.CreateToken(appUser);
+
+            await UpdateRefreshToken(token.RefreshToken, appUser, token.ExpirationDate);
             return new SuccessDataResult<AccessToken>(token);
         }
 
@@ -118,7 +131,7 @@ namespace Business.Concrete
                 return new ErrorResult("Not Successful");
 
             return new SuccessResult("Change Password Successful");
-              
+
         }
 
         public async Task<IResult> EmailPasswordToken(string email)

@@ -115,6 +115,18 @@ namespace WebApi.Controllers
             return Ok(new { Token = "Token" });
 
         }
+
+        [HttpGet("{refreshtoken}")]
+        public async Task<IActionResult> RefreshTokenLogin(string refreshtoken)
+        {
+            var result = await _userService.RefreshTokenLogin(refreshtoken);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
     }
 }
 
